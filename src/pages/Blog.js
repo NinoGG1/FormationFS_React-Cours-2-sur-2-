@@ -6,26 +6,42 @@ import Article from "../components/Article";
 
 const Blog = () => {
   const [blogData, setBlogData] = useState([]);
+  const [author, setAuthor] = useState([]);
   const [content, setContent] = useState("");
   const [error, setError] = useState(false);
 
-  const getData = () => {
-    axios
-      .get("http://localhost:3004/articles")
-      .then((res) => setBlogData(res.data));
+  const getData = async () => {
+    try {
+      const response = await axios.get("http://localhost:3004/articles");
+      setBlogData(response.data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des articles", error);
+    }
   };
 
   useEffect(() => {
     getData();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (content.length < 140) {
       setError(true);
     } else {
-      setError(false);
+      try {
+        await axios.post("http://localhost:3004/articles", {
+          author,
+          content,
+          date: Date.now(),
+        });
+        setError(false);
+        setAuthor("");
+        setContent("");
+        await getData();
+      } catch (error) {
+        console.error("Erreur lors de la publication de l'article", error);
+      }
     }
   };
 
@@ -36,11 +52,17 @@ const Blog = () => {
       <h1>Blog</h1>
 
       <form onSubmit={(e) => handleSubmit(e)}>
-        <input type="text" placeholder="Nom" />
+        <input
+          type="text"
+          placeholder="Nom"
+          onChange={(e) => setAuthor(e.target.value)}
+          value={author}
+        />
         <textarea
           style={{ border: error ? "1px solid red" : "1px solid #61dafb" }}
           placeholder="Message"
           onChange={(e) => setContent(e.target.value)}
+          value={content}
         ></textarea>
         {error && <p>Veuillez écrire un minimum de 140 caractères</p>}
         <input type="submit" value="Envoyer" />
